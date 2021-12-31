@@ -27,31 +27,11 @@ func NewClient(serverIp string, serverPort int, logFolder string) *Client {
 		logHandles: map[string]*filelog_v1.CFileLog{},
 	}
 
-	// 2、初始胡客户端日志位置
-	Me.initClientLogDate()
-
-	// 3、创建客户端socket连接
+	// 2、创建客户端socket连接
 	SocketClient := socket_v1.NewClient(serverIp, serverPort, Me.onMessage, Me.onConnectFail, Me.onConnect, Me.onDisConnect)
 	go SocketClient.Connect()
 
 	return Me
-}
-
-// 1.0、初始胡客户端日志位置
-func (Me *Client) initClientLogDate() {
-	// 初始胡日期为7天前,位置为-1
-	// Me.ReqDate = utils_v1.Time().DateAdd(utils_v1.Time().Date(), -7)
-	Me.ReqDate = utils_v1.Time().DateAdd(utils_v1.Time().Date(), -1)
-	// Me.ReqDate = utils_v1.Time().Date()
-
-	if _, ok := Me.logHandles[Me.ReqDate]; !ok {
-		Me.logHandles[Me.ReqDate] = filelog_v1.New(Me.logFolder, Me.ReqDate)
-		if id, err := Me.logHandles[Me.ReqDate].GetAutoId(); err != nil {
-			log.Panic(err)
-		} else {
-			Me.ReqDateId = id
-		}
-	}
 }
 
 // 1.1、收到了消息回调函数，这里处理消息
@@ -68,6 +48,7 @@ func (Me *Client) onConnectFail(C *socket_v1.Client) {
 // 1.3、连接成功回调函数
 func (Me *Client) onConnect(C *socket_v1.Client) {
 	fmt.Println(time.Now().Format("2006-01-02 15:04:05"), "连接成功！")
+	Me.initClientLogDate()
 	Content, _ := json_v1.JsonEncode(map[string]interface{}{
 		"date": Me.ReqDate,
 		"id":   Me.ReqDateId,
@@ -82,7 +63,26 @@ func (Me *Client) onConnect(C *socket_v1.Client) {
 // 1.4、掉线回调函数
 func (Me *Client) onDisConnect(C *socket_v1.Client) {
 	fmt.Println(time.Now().Format("2006-01-02 15:04:05"), "掉线了,5秒后重连")
+	for k, v := range Me.logHandles {
+		v.Close()
+		delete(Me.logHandles, k)
+	}
 	go C.ReConnect(5) // 延时5秒后重连
+}
+
+// 1.5、初始胡客户端日志位置
+func (Me *Client) initClientLogDate() {
+	// 初始胡日期为7天前,位置为-1
+	Me.ReqDate = utils_v1.Time().DateAdd(utils_v1.Time().Date(), -7)
+
+	if _, ok := Me.logHandles[Me.ReqDate]; !ok {
+		Me.logHandles[Me.ReqDate] = filelog_v1.New(Me.logFolder, Me.ReqDate)
+		if id, err := Me.logHandles[Me.ReqDate].GetAutoId(); err != nil {
+			log.Panic(err)
+		} else {
+			Me.ReqDateId = id
+		}
+	}
 }
 
 // 2、消息处理
@@ -131,7 +131,8 @@ func (Me *Client) onMsg(Msg socket_v1.UDataSocket, C *socket_v1.Client) {
 
 			// 日期不符
 			if D.Date != Me.ReqDate {
-				log.Panic("eeee")
+				log.Error("日期不符")
+				C.DisConnect()
 			}
 
 			// 初始化
@@ -141,17 +142,21 @@ func (Me *Client) onMsg(Msg socket_v1.UDataSocket, C *socket_v1.Client) {
 
 			// Id校验
 			if D.Id != Me.logHandles[D.Date].AutoId {
-				log.Panic("数据ID和客户端id不一致", D.Id, Me.logHandles[D.Date].AutoId)
+				log.Error("数据ID和客户端id不一致", D.Id, Me.logHandles[D.Date].AutoId)
+				C.DisConnect()
+				break
 			}
 
 			// 数据长度校验
 			if len(D.Data) != int(D.DataLength) {
-				log.Panic("数据长度字段和计算长度不一致")
+				log.Error("数据长度字段和计算长度不一致")
+				C.DisConnect()
 			}
 
 			// 写入数据，（写数据后 Me.logHandles[D.Date]的AutoId,DataOffset都会变化）
 			if _, err := Me.logHandles[D.Date].Add(D.Time, D.DataType, D.Data); err != nil {
 				log.Error(err)
+				C.DisConnect()
 			}
 		}
 	}
