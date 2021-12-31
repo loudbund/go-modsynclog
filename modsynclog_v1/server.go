@@ -229,6 +229,24 @@ func (Me *Server) onHookEvent(Event socket_v1.HookEvent) {
 	}
 }
 
+// 批量获取log日志
+func (Me *Server) getLogGroup(U *User, rowNumber int) []*filelog_v1.UDataSend {
+	Id := Me.Users[U.ClientId].ReqDateId
+	Data := make([]*filelog_v1.UDataSend, 0)
+	for i := 0; i < rowNumber; i++ {
+		if D, err := U.logReadHandles[U.ReqDate].GetOne(Id); err != nil {
+			log.WithFields(log.Fields{"n": "取数据失败"}).Error(err)
+			return Data
+		} else if D == nil {
+			return Data
+		} else {
+			Data = append(Data, D)
+		}
+		Id++
+	}
+	return Data
+}
+
 // 发送日志给客户端
 func (Me *Server) sendLog(U *User) {
 	fmt.Println("start send log:", U.ClientId)
@@ -241,39 +259,43 @@ func (Me *Server) sendLog(U *User) {
 			if _, ok := U.logReadHandles[U.ReqDate]; !ok {
 				U.logReadHandles[U.ReqDate] = filelog_v1.New(Me.logFolder, U.ReqDate)
 			} else {
-				if D, err := U.logReadHandles[U.ReqDate].GetOne(U.ReqDateId); err != nil {
-					log.WithFields(log.Fields{"n": "取数据失败"}).Error(err)
-					time.Sleep(time.Second)
-				} else if D == nil {
-					// 如果日期内的日志已经发送完成，则发送标记
-					if finished := U.logReadHandles[U.ReqDate].GetFinish(); finished {
-						if err := Me.SocketServer.SendMsg(&U.ClientId, socket_v1.UDataSocket{
-							Zlib:    1,
-							CType:   304,
-							Content: []byte(U.ReqDate),
-						}); err != nil {
-							log.WithFields(log.Fields{"n": "消息发送失败"}).Error(err)
-							return
-						}
-					}
-					time.Sleep(time.Second)
-				} else {
-					sendData := make([]*filelog_v1.UDataSend, 0)
-					sendData = append(sendData, D)
+				KeyPerNum := 500
+				KeyData := Me.getLogGroup(U, KeyPerNum)
+				// 打印点输出
+				if len(KeyData) > 0 {
+					fmt.Println(utils_v1.Time().DateTime(), "send log to ", U.ClientId, len(KeyData))
+				}
 
+				// 有数据需要处理
+				if len(KeyData) > 0 {
 					if err := Me.SocketServer.SendMsg(&U.ClientId, socket_v1.UDataSocket{
 						Zlib:    1,
 						CType:   302,
-						Content: utilsEncodeUData(sendData),
+						Content: utilsEncodeUData(KeyData),
 					}); err != nil {
 						log.WithFields(log.Fields{"n": "消息发送失败"}).Error(err)
 						return
 					} else {
 						if _, ok := Me.Users[U.ClientId]; ok {
-							Me.Users[U.ClientId].ReqDateId++
+							Me.Users[U.ClientId].ReqDateId += int64(len(KeyData))
 						}
 					}
+					if len(KeyData) == KeyPerNum {
+						continue
+					}
 				}
+				// 如果日期内的日志已经发送完成，则发送标记
+				if finished := U.logReadHandles[U.ReqDate].GetFinish(); finished {
+					if err := Me.SocketServer.SendMsg(&U.ClientId, socket_v1.UDataSocket{
+						Zlib:    1,
+						CType:   304,
+						Content: []byte(U.ReqDate),
+					}); err != nil {
+						log.WithFields(log.Fields{"n": "消息发送失败"}).Error(err)
+						return
+					}
+				}
+				time.Sleep(time.Second)
 			}
 		} else {
 			time.Sleep(time.Second)

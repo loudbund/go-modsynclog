@@ -10,7 +10,7 @@ func main() {
 	serverPort := 2222
 
 	// 创建客户端连接
-	_ = modsynclog_v1.NewClient(serverIp, serverPort, "/tmp/test-synlog-client")
+	_ = modsynclog_v1.NewClient(serverIp, serverPort, "/tmp/test-modsynlog-client")
 
 	// 处理其他逻辑
 	select {}

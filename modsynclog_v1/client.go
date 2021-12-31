@@ -40,7 +40,8 @@ func NewClient(serverIp string, serverPort int, logFolder string) *Client {
 // 1.0、初始胡客户端日志位置
 func (Me *Client) initClientLogDate() {
 	// 初始胡日期为7天前,位置为-1
-	Me.ReqDate = utils_v1.Time().DateAdd(utils_v1.Time().Date(), -7)
+	// Me.ReqDate = utils_v1.Time().DateAdd(utils_v1.Time().Date(), -7)
+	Me.ReqDate = utils_v1.Time().DateAdd(utils_v1.Time().Date(), -1)
 	// Me.ReqDate = utils_v1.Time().Date()
 
 	if _, ok := Me.logHandles[Me.ReqDate]; !ok {

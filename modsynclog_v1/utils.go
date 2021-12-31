@@ -10,14 +10,14 @@ import (
 func utilsEncodeUData(D []*filelog_v1.UDataSend) []byte {
 	bytesBuffer := bytes.NewBuffer([]byte{})
 	for _, d := range D {
-		bytesBuffer.Write(utilsInt32ToBytes(int32(38 + len(d.Data))))
-		bytesBuffer.Write([]byte(d.Date))
-		bytesBuffer.Write(utilsInt32ToBytes(d.Time))
-		bytesBuffer.Write(utilsInt64ToBytes(d.Id))
-		bytesBuffer.Write(utilsInt16ToBytes(d.DataFileIndex))
-		bytesBuffer.Write(utilsInt64ToBytes(d.DataOffset))
-		bytesBuffer.Write(utilsInt16ToBytes(d.DataType))
-		bytesBuffer.Write(utilsInt32ToBytes(d.DataLength))
+		bytesBuffer.Write(utilsInt32ToBytes(int32(len(d.Data))))
+		bytesBuffer.Write([]byte(d.Date))                     // +10=10
+		bytesBuffer.Write(utilsInt32ToBytes(d.Time))          // +4=14
+		bytesBuffer.Write(utilsInt64ToBytes(d.Id))            // +8=22
+		bytesBuffer.Write(utilsInt16ToBytes(d.DataFileIndex)) // +2=24
+		bytesBuffer.Write(utilsInt64ToBytes(d.DataOffset))    // +8=32
+		bytesBuffer.Write(utilsInt16ToBytes(d.DataType))      // +2=34
+		bytesBuffer.Write(utilsInt32ToBytes(d.DataLength))    // +4=38
 		bytesBuffer.Write(d.Data)
 	}
 	return bytesBuffer.Bytes()
@@ -27,9 +27,9 @@ func utilsEncodeUData(D []*filelog_v1.UDataSend) []byte {
 func utilsDecodeUData(Bytes []byte) []*filelog_v1.UDataSend {
 	UDatas := make([]*filelog_v1.UDataSend, 0)
 	for {
-		Len := utilsBytes2Int32(Bytes[:4])
+		DataLength := utilsBytes2Int32(Bytes[:4])
 		Bytes = Bytes[4:]
-		UDatas = append(UDatas, &filelog_v1.UDataSend{
+		D := &filelog_v1.UDataSend{
 			Date:          string(Bytes[:10]),
 			Time:          utilsBytes2Int32(Bytes[10:14]),
 			Id:            utilsBytes2Int64(Bytes[14:22]),
@@ -37,9 +37,10 @@ func utilsDecodeUData(Bytes []byte) []*filelog_v1.UDataSend {
 			DataOffset:    utilsBytes2Int64(Bytes[24:32]),
 			DataType:      utilsBytes2Int16(Bytes[32:34]),
 			DataLength:    utilsBytes2Int32(Bytes[34:38]),
-			Data:          Bytes[38:Len],
-		})
-		Bytes = Bytes[Len-4:]
+			Data:          Bytes[38 : 38+DataLength],
+		}
+		UDatas = append(UDatas, D)
+		Bytes = Bytes[DataLength+38:]
 
 		if len(Bytes) <= 38 {
 			break
