@@ -8,8 +8,8 @@ github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnr
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/larspensjo/config v0.0.0-20160228172812-b6db95dc6321 h1:HuvFF+bNfti7Q3taQTLox7YntC2IzUzM8pn2zyRTn98=
 github.com/larspensjo/config v0.0.0-20160228172812-b6db95dc6321/go.mod h1:2tvhHYSOp38Gz/nhlXdCBepDFHG1/GCI0nuk4Dv9EyM=
-github.com/loudbund/go-filelog v1.0.10 h1:+xa2XEyuYrkBtahAAGQicxFx2kGQr8288MrT+WWtthw=
-github.com/loudbund/go-filelog v1.0.10/go.mod h1:844srXdFlDGeWQfDGfG4nJW12g88LqPEhGjQhn4g94g=
+github.com/loudbund/go-filelog v1.0.11 h1:7EgjjxRnMjq4pL5vKCvi5T9tUqd5n265b2gqhe/KgsY=
+github.com/loudbund/go-filelog v1.0.11/go.mod h1:844srXdFlDGeWQfDGfG4nJW12g88LqPEhGjQhn4g94g=
 github.com/loudbund/go-json v1.0.0 h1:yviANCed1A55ctf2KUAQHbf9oI9YBs2/y8EhKlRHOoE=
 github.com/loudbund/go-json v1.0.0/go.mod h1:szBBt6hUNf4Cxo6HoVEbN17znTEmD0Wgma2kQs6SiOE=
 github.com/loudbund/go-mysql v1.0.1/go.mod h1:hRMuEgBeso9Y8WaWjKLdm21+K1v/CN9gPkQy8AVfWzQ=
