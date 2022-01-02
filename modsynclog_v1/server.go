@@ -109,19 +109,19 @@ func (Me *Server) write(writer http.ResponseWriter, request *http.Request) {
 	if true {
 		vType := request.PostFormValue("type")
 		vData := request.PostFormValue("data")
-		if vType == "" || vData == "" {
-			query := request.URL.Query()
-			if vType == "" {
-				if _, ok := query["type"]; ok {
-					vType = query["type"][0]
-				}
-			}
-			if vData == "" {
-				if _, ok := query["data"]; ok {
-					vData = query["data"][0]
-				}
-			}
-		}
+		// if vType == "" || vData == "" {
+		// 	query := request.URL.Query()
+		// 	if vType == "" {
+		// 		if _, ok := query["type"]; ok {
+		// 			vType = query["type"][0]
+		// 		}
+		// 	}
+		// 	if vData == "" {
+		// 		if _, ok := query["data"]; ok {
+		// 			vData = query["data"][0]
+		// 		}
+		// 	}
+		// }
 		if vType != "" {
 			if d, err := strconv.Atoi(vType); err == nil {
 				if d < 20000 {
@@ -135,12 +135,22 @@ func (Me *Server) write(writer http.ResponseWriter, request *http.Request) {
 	if KeyType == 0 || KeyData == "" {
 		_, _ = writer.Write([]byte(`{"errcode": 101,"errmsg":"参数错误","err":""}`))
 	} else {
-		// 日志写入管道
-		Me.logChan <- &filelog_v1.UDataSend{
-			DataType: KeyType,
-			Data:     []byte(KeyData),
+		if D, err := json_v1.JsonDecode(KeyData); err != nil {
+			_, _ = writer.Write([]byte(`{"errcode": 102,"errmsg":"data参数错误","err":""}`))
+		} else {
+			if _, ok := D.([]interface{}); !ok {
+				_, _ = writer.Write([]byte(`{"errcode": 103,"errmsg":"data参数错误","err":""}`))
+			} else {
+				for _, V := range D.([]interface{}) {
+					// 日志写入管道
+					Me.logChan <- &filelog_v1.UDataSend{
+						DataType: KeyType,
+						Data:     []byte(V.(string)),
+					}
+				}
+				_, _ = writer.Write([]byte(`{"errcode": 0,"data":"ok"}`))
+			}
 		}
-		_, _ = writer.Write([]byte(`{"errcode": 0,"data":"ok"}`))
 	}
 }
 
