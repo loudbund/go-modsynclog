@@ -241,7 +241,10 @@ func (Me *Server) onHookEvent(Event socket_v1.HookEvent) {
 
 // 批量获取log日志
 func (Me *Server) getLogGroup(U *User, rowNumber int) []*filelog_v1.UDataSend {
+	Me.lockListUser.Lock()
 	Id := Me.Users[U.ClientId].ReqDateId
+	Me.lockListUser.Unlock()
+
 	Data := make([]*filelog_v1.UDataSend, 0)
 	for i := 0; i < rowNumber; i++ {
 		if D, err := U.logReadHandles[U.ReqDate].GetOne(Id); err != nil {
@@ -261,7 +264,10 @@ func (Me *Server) getLogGroup(U *User, rowNumber int) []*filelog_v1.UDataSend {
 func (Me *Server) sendLog(U *User) {
 	fmt.Println("start send log:", U.ClientId)
 	for {
-		if _, ok := Me.Users[U.ClientId]; !ok {
+		Me.lockListUser.Lock()
+		_, ok := Me.Users[U.ClientId]
+		Me.lockListUser.Unlock()
+		if !ok {
 			return
 		}
 
@@ -286,9 +292,11 @@ func (Me *Server) sendLog(U *User) {
 						log.WithFields(log.Fields{"n": "消息发送失败"}).Error(err)
 						return
 					} else {
+						Me.lockListUser.Lock()
 						if _, ok := Me.Users[U.ClientId]; ok {
 							Me.Users[U.ClientId].ReqDateId += int64(len(KeyData))
 						}
+						Me.lockListUser.Unlock()
 					}
 					if len(KeyData) == KeyPerNum {
 						continue
