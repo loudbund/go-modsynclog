@@ -56,8 +56,8 @@ github.com/loudbund/go-json v1.0.0 h1:yviANCed1A55ctf2KUAQHbf9oI9YBs2/y8EhKlRHOo
 github.com/loudbund/go-json v1.0.0/go.mod h1:szBBt6hUNf4Cxo6HoVEbN17znTEmD0Wgma2kQs6SiOE=
 github.com/loudbund/go-request v1.0.0 h1:4XCBP5eflpwe1/qj7nHEC6jzsPbbdTETZaHZNjcxYps=
 github.com/loudbund/go-request v1.0.0/go.mod h1:rCe7Y8E7qT2c33RTN4Ay1ZEnn0qCYQKod3HLF7TS3S8=
-github.com/loudbund/go-socket v1.0.10 h1:Xic5tmk0mHreaA+GHs+HmwWEq6pkqFzWXgG7AHwsNGc=
-github.com/loudbund/go-socket v1.0.10/go.mod h1:tYA+/Bpd7mtNBehQDIBsMb8Arso+UeSQaQoCycjUPOI=
+github.com/loudbund/go-socket v1.0.11 h1:lqzpOg1brwzTqBnFCMaF1UkZjY8e9NlzUqSDn7NtxmM=
+github.com/loudbund/go-socket v1.0.11/go.mod h1:tYA+/Bpd7mtNBehQDIBsMb8Arso+UeSQaQoCycjUPOI=
 github.com/loudbund/go-utils v1.0.8 h1:HQxknx3ivfU+7wpUnNDCEZCPcmqjm9CzKasGOC4CD60=
 github.com/loudbund/go-utils v1.0.8/go.mod h1:zWk53IYDd78rCDNrku6p2Jj3FrjANTCSAJAL1rF4LhA=
 github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 h1:ZqeYNhU3OHLH3mGKHDcjJRFFRrJa6eAM5H+CtDdOsPc=
