@@ -78,7 +78,7 @@ func SdkInitGRpcAppLog(Address string) {
 	// 创建grpc连接
 	conn, err := grpc.Dial(Address, grpc.WithInsecure())
 	if err != nil {
-		log.Fatal("did not connect: %v", err)
+		log.Error("日志grpc连接失败: %v", err)
 	}
 	// defer func() { _ = conn.Close() }()
 
@@ -100,7 +100,7 @@ func SdkGRpcAppLogAdd(inData *grpc_proto_applog.AppLogData) error {
 		Data:     data,
 	})
 	if err != nil {
-		log.Fatal("could not greet: %v", err)
+		log.Error("could not greet: %v", err)
 		return err
 	}
 	if r.ErrCode != 0 {

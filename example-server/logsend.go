@@ -6,6 +6,7 @@ import (
 	"github.com/loudbund/go-modsynclog/modsynclog_v1/grpc_proto_applog"
 	"github.com/loudbund/go-utils/utils_v1"
 	log "github.com/sirupsen/logrus"
+	"time"
 )
 
 func init() {
@@ -92,7 +93,13 @@ func gRpcAppLog() {
 		},
 	}
 
-	if err := modsynclog_v1.SdkGRpcAppLogAdd(D); err != nil {
-		fmt.Println(err)
+	for i := 0; i < 10; i++ {
+		if err := modsynclog_v1.SdkGRpcAppLogAdd(D); err != nil {
+			fmt.Println(err)
+			time.Sleep(time.Second * 5)
+		} else {
+			fmt.Println("Ok")
+			break
+		}
 	}
 }
