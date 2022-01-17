@@ -41,7 +41,7 @@ type Server struct {
 }
 
 // 对外函数：创建实例
-func NewServer(Ip string, PortHttp, PortSocket int, logFolder string) *Server {
+func NewServer(Ip string, PortSocket, PortHttp, PortGRpc int, logFolder string) *Server {
 	Me := &Server{
 		Users:      map[string]*User{},
 		ListUser:   list.New(),
@@ -70,6 +70,11 @@ func NewServer(Ip string, PortHttp, PortSocket int, logFolder string) *Server {
 	Me.SocketServer = socket_v1.NewServer(Ip, PortSocket, func(Event socket_v1.HookEvent) {
 		Me.onHookEvent(Event)
 	})
+
+	// 4、grpc服务
+	if PortGRpc > 0 {
+		NewAppLog(Ip+":"+strconv.Itoa(PortGRpc), Me)
+	}
 
 	return Me
 }
@@ -109,19 +114,6 @@ func (Me *Server) write(writer http.ResponseWriter, request *http.Request) {
 	if true {
 		vType := request.PostFormValue("type")
 		vData := request.PostFormValue("data")
-		// if vType == "" || vData == "" {
-		// 	query := request.URL.Query()
-		// 	if vType == "" {
-		// 		if _, ok := query["type"]; ok {
-		// 			vType = query["type"][0]
-		// 		}
-		// 	}
-		// 	if vData == "" {
-		// 		if _, ok := query["data"]; ok {
-		// 			vData = query["data"][0]
-		// 		}
-		// 	}
-		// }
 		if vType != "" {
 			if d, err := strconv.Atoi(vType); err == nil {
 				if d < 20000 {
@@ -178,6 +170,7 @@ func (Me *Server) messageWrite() {
 			if !ok {
 				return
 			}
+			// fmt.Println(D.DataType, string(D.Data))
 			// 判断是否跨天了
 			Time := time.Now().Unix()
 			if true {
