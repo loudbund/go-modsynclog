@@ -3,7 +3,7 @@ module github.com/loudbund/go-modsynclog
 go 1.16
 
 require (
-	github.com/golang/protobuf v1.5.0
+	github.com/golang/protobuf v1.5.2
 	github.com/loudbund/go-filelog v1.0.12
 	github.com/loudbund/go-json v1.0.0
 	github.com/loudbund/go-request v1.0.0

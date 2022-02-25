@@ -73,7 +73,7 @@ func NewServer(Ip string, PortSocket, PortHttp, PortGRpc int, logFolder string) 
 
 	// 4、grpc服务
 	if PortGRpc > 0 {
-		NewAppLog(Ip+":"+strconv.Itoa(PortGRpc), Me)
+		NewLog(Ip+":"+strconv.Itoa(PortGRpc), Me)
 	}
 
 	return Me

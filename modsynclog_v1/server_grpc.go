@@ -4,19 +4,19 @@ import (
 	"context"
 	"fmt"
 	"github.com/loudbund/go-filelog/filelog_v1"
-	"github.com/loudbund/go-modsynclog/modsynclog_v1/grpc_proto_applog"
+	"github.com/loudbund/go-modsynclog/modsynclog_v1/grpc_proto_log"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"net"
 )
 
 //
-type AppLogServer struct {
+type LogServer struct {
 	server *Server
 }
 
 // grpc服务实例化 Addr:0.0.0.0:1235
-func NewAppLog(Addr string, server *Server) {
+func NewLog(Addr string, server *Server) {
 	// 创建监听服务
 	listen, err := net.Listen("tcp", Addr)
 	if err != nil {
@@ -25,7 +25,7 @@ func NewAppLog(Addr string, server *Server) {
 	s := grpc.NewServer()
 
 	// 服务注册
-	grpc_proto_applog.RegisterAppLogServer(s, &AppLogServer{
+	grpc_proto_log.RegisterLogServer(s, &LogServer{
 		server: server,
 	})
 
@@ -37,7 +37,7 @@ func NewAppLog(Addr string, server *Server) {
 }
 
 // grpc远程函数
-func (x *AppLogServer) AppLogWrite(ctx context.Context, in *grpc_proto_applog.AppLogRequest) (*grpc_proto_applog.AppLogResponse, error) { // 进行编码
+func (x *LogServer) AppLogWrite(ctx context.Context, in *grpc_proto_log.AppLogRequest) (*grpc_proto_log.AppLogResponse, error) { // 进行编码
 	// 日志写入管道
 	x.server.logChan <- &filelog_v1.UDataSend{
 		DataType: 1101,
@@ -45,5 +45,17 @@ func (x *AppLogServer) AppLogWrite(ctx context.Context, in *grpc_proto_applog.Ap
 	}
 
 	// 3、写入日志
-	return &grpc_proto_applog.AppLogResponse{ErrCode: 0, ErrMessage: "ok", Data: ""}, nil
+	return &grpc_proto_log.AppLogResponse{ErrCode: 0, ErrMessage: "ok", Data: ""}, nil
+}
+
+// grpc远程函数
+func (x *LogServer) DbLogWrite(ctx context.Context, in *grpc_proto_log.DbLogRequest) (*grpc_proto_log.DbLogResponse, error) { // 进行编码
+	// 日志写入管道
+	x.server.logChan <- &filelog_v1.UDataSend{
+		DataType: 1001,
+		Data:     in.Data,
+	}
+
+	// 3、写入日志
+	return &grpc_proto_log.DbLogResponse{ErrCode: 0, ErrMessage: "ok", Data: ""}, nil
 }

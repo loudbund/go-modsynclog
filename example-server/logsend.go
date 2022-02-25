@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/loudbund/go-modsynclog/modsynclog_v1"
-	"github.com/loudbund/go-modsynclog/modsynclog_v1/grpc_proto_applog"
+	"github.com/loudbund/go-modsynclog/modsynclog_v1/grpc_proto_log"
 	"github.com/loudbund/go-utils/utils_v1"
 	log "github.com/sirupsen/logrus"
 	"time"
@@ -15,91 +15,142 @@ func init() {
 
 // 6、主函数 -------------------------------------------------------------------------
 func main() {
-	modsynclog_v1.SdkInitHttpSet("http://127.0.0.1:1234")
-	modsynclog_v1.SdkInitGRpcAppLog("127.0.0.1:1235")
-
-	// for i := 0; i < 11; i++ {
-	// 	if err := modsynclog_v1.SendLog(123, []string{utils_v1.Time().DateTime()}); err != nil {
-	// 		fmt.Println(err)
-	// 	}
-	// }
-
-	httpLog()
-	httpAppLog()
-
-	gRpcLog()
-	for i := 0; i < 2; i++ {
-		gRpcAppLog()
-	}
+	// 应用日志
+	// sendLogApp()
+	// 数据库日志
+	sendLogDb()
 }
 
-// http写常规日志
-func httpLog() {
-}
+// 2、日志发送：app日志
+func sendLogApp() {
+	handleAppLog := modsynclog_v1.NewSdkAppLog("http://127.0.0.1:1234", "127.0.0.1:1235")
 
-// http写应用日志
-func httpAppLog() {
-	D := make([]*grpc_proto_applog.AppLogData, 0)
-	D = append(D, &grpc_proto_applog.AppLogData{
-		Env:       "dev",
-		Sys:       "haha",
-		Level:     "info",
-		File:      "abc.go",
-		Func:      "haha()",
-		Time:      utils_v1.Time().DateTime(),
-		TimeInt64: 0,
-		Message:   "hahaha",
-		Data: map[string]string{
-			"techerId": "500",
-		},
-	})
-	D = append(D, &grpc_proto_applog.AppLogData{
-		Env:       "dev",
-		Sys:       "haha",
-		Level:     "info",
-		File:      "abc.go",
-		Func:      "haha()",
-		Time:      utils_v1.Time().DateTime(),
-		TimeInt64: 0,
-		Message:   "hahaha",
-		Data: map[string]string{
-			"techerId": "500",
-		},
-	})
-	// 1、http方式发送日志
-	if err := modsynclog_v1.SdkHttpAppLogAdd(D); err != nil {
-		fmt.Println(err)
-	}
-	// 2、grpc方式发送日志
-}
-
-// grpc写常规日志
-func gRpcLog() {
-}
-
-// grpc写应用日志
-func gRpcAppLog() {
-	D := &grpc_proto_applog.AppLogData{
-		Env:       "dev",
-		Sys:       "haha",
-		Level:     "info",
-		File:      "abc.go",
-		Func:      "haha()",
-		Time:      utils_v1.Time().DateTime(),
-		TimeInt64: 0,
-		Message:   "hahaha",
-		Data: map[string]string{
-			"techerId": "500",
-		},
-	}
-
-	for i := 0; i < 10; i++ {
-		if err := modsynclog_v1.SdkGRpcAppLogAdd(D); err != nil {
+	if true {
+		D := make([]*grpc_proto_log.AppLogData, 0)
+		D = append(D, &grpc_proto_log.AppLogData{
+			Env:       "dev",
+			Sys:       "haha",
+			Level:     "info",
+			File:      "abc.go",
+			Func:      "haha()",
+			Time:      utils_v1.Time().DateTime(),
+			TimeInt64: 0,
+			Message:   "hahaha",
+			Data: map[string]string{
+				"techerId": "500",
+			},
+		})
+		D = append(D, &grpc_proto_log.AppLogData{
+			Env:       "dev",
+			Sys:       "haha",
+			Level:     "info",
+			File:      "abc.go",
+			Func:      "haha()",
+			Time:      utils_v1.Time().DateTime(),
+			TimeInt64: 0,
+			Message:   "hahaha",
+			Data: map[string]string{
+				"techerId": "500",
+			},
+		})
+		// 1、http方式发送日志
+		if err := handleAppLog.SdkAppLogAddHttp(D); err != nil {
 			fmt.Println(err)
-			time.Sleep(time.Second * 5)
-		} else {
-			fmt.Println("Ok")
-			break
+		}
+	}
+
+	// GRPC日志 //////////////////////
+	if true {
+		for i := 0; i < 2; i++ {
+			D := &grpc_proto_log.AppLogData{
+				Env:       "dev",
+				Sys:       "haha",
+				Level:     "info",
+				File:      "abc.go",
+				Func:      "haha()",
+				Time:      utils_v1.Time().DateTime(),
+				TimeInt64: 0,
+				Message:   "hahaha",
+				Data: map[string]string{
+					"techerId": "500",
+				},
+			}
+
+			// grpc发送日志
+			if err := handleAppLog.SdkAppLogAddGRpc(D); err != nil {
+				fmt.Println(err)
+				time.Sleep(time.Second * 5)
+			} else {
+				fmt.Println("Ok")
+			}
+		}
+	}
+
+}
+
+// 3、日志发送：数据库日志 //////////////////////////////////////
+func sendLogDb() {
+	handleDbLog := modsynclog_v1.NewSdkDbLog("http://127.0.0.1:1234", "127.0.0.1:1235")
+
+	if false {
+		D := make([]*grpc_proto_log.DbLogData, 0)
+		D = append(D, &grpc_proto_log.DbLogData{
+			DbInstance: "anoah",
+			Type:       "table-create",
+			Database:   "wawa",
+			Table:      "haha",
+			Ts:         "1234",
+			Position:   "xxx",
+			Xid:        1,
+			Commit:     true,
+			Data:       nil,
+			Sql:        "create table",
+		})
+		D = append(D, &grpc_proto_log.DbLogData{
+			DbInstance: "anoah",
+			Type:       "insert",
+			Database:   "wawa",
+			Table:      "haha",
+			Ts:         "1234",
+			Position:   "xxx",
+			Xid:        1,
+			Commit:     true,
+			Sql:        "",
+			Data: map[string]string{
+				"id": "123",
+			},
+		})
+		// 1、http方式发送日志
+		if err := handleDbLog.SdkDbLogAddHttp(D); err != nil {
+			fmt.Println(err)
+		}
+	}
+
+	// GRPC日志 //////////////////////
+	if true {
+		for i := 0; i < 2; i++ {
+			D := &grpc_proto_log.DbLogData{
+				DbInstance: "anoah",
+				Type:       "insert",
+				Database:   "wawa",
+				Table:      "haha",
+				Ts:         "1234",
+				Position:   "xxx",
+				Xid:        1,
+				Commit:     true,
+				Sql:        "",
+				Data: map[string]string{
+					"id": "123",
+				},
+			}
+
+			// grpc发送日志
+			if err := handleDbLog.SdkDbLogAddGRpc(D); err != nil {
+				fmt.Println(err)
+				time.Sleep(time.Second * 5)
+			} else {
+				fmt.Println("Ok")
+			}
 		}
 	}
 }
