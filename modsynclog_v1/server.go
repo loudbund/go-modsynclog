@@ -40,7 +40,7 @@ type Server struct {
 }
 
 // 对外函数：创建实例
-func NewServer(Ip string, PortSocket, PortHttp, PortGRpc int, logFolder string) *Server {
+func NewServer(Ip string, PortSocket, PortGRpc int, logFolder string) *Server {
 	Me := &Server{
 		Users:      map[string]*User{},
 		ListUser:   list.New(),
