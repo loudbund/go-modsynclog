@@ -3,33 +3,30 @@ package modsynclog_v1
 import (
 	"errors"
 	"github.com/golang/protobuf/proto"
-	"github.com/loudbund/go-json/json_v1"
 	"github.com/loudbund/go-modsynclog/modsynclog_v1/grpc_proto_log"
-	"github.com/loudbund/go-request/request_v1"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"strconv"
 )
 
 type AppLog struct {
-	dataType      int32
-	httpDomain    string                   // http每次连接地址
+	dataType int32
+	// httpDomain    string                   // http每次连接地址
 	gRpcLogClient grpc_proto_log.LogClient // grpc长连接句柄
 }
 type DbLog struct {
-	dataType      int32
-	httpDomain    string                   // http每次连接地址
+	dataType int32
+	// httpDomain    string                   // http每次连接地址
 	gRpcLogClient grpc_proto_log.LogClient // grpc长连接句柄
 }
 
-func NewSdkAppLog(httpDomain, gRpcAddress string) *AppLog {
+func NewSdkAppLog(gRpcAddress string) *AppLog {
 	handle := &AppLog{
 		dataType: 1101,
 	}
-	if httpDomain != "" {
-		handle.httpDomain = httpDomain
-	}
+	// if httpDomain != "" {
+	// 	handle.httpDomain = httpDomain
+	// }
 	if gRpcAddress != "" {
 		// 创建grpc连接
 		conn, err := grpc.Dial(gRpcAddress, grpc.WithInsecure())
@@ -43,35 +40,35 @@ func NewSdkAppLog(httpDomain, gRpcAddress string) *AppLog {
 }
 
 // http程序日志写入
-func (Me *AppLog) SdkAppLogAddHttp(inData []*grpc_proto_log.AppLogData) error {
-	if Me.httpDomain == "" {
-		return errors.New("未设置domain，请先执行SetDomain设置域名")
-	}
-
-	// 数据内容体现用proto加密
-	sData := make([]string, 0)
-	for _, v := range inData {
-		data, err := proto.Marshal(v)
-		if err != nil {
-			log.Error("marshaling error: ", err)
-		}
-		sData = append(sData, string(data))
-	}
-	data, _ := json_v1.JsonEncode(sData)
-
-	// 执行写日志接口请求
-	if code, body, err := request_v1.PostForm(Me.httpDomain+"/log/write", map[string]string{
-		"type": strconv.Itoa(int(Me.dataType)),
-		"data": data,
-	}); err != nil {
-		return errors.New("日志发送失败:" + err.Error())
-	} else if code != 200 {
-		return errors.New("日志发送失败:状态码不为200，为" + strconv.Itoa(code))
-	} else if body != `{"errcode": 0,"data":"ok"}` {
-		return errors.New("日志发送失败:返回body:" + body)
-	}
-	return nil
-}
+// func (Me *AppLog) SdkAppLogAddHttp(inData []*grpc_proto_log.AppLogData) error {
+// 	if Me.httpDomain == "" {
+// 		return errors.New("未设置domain，请先执行SetDomain设置域名")
+// 	}
+//
+// 	// 数据内容体现用proto加密
+// 	sData := make([]string, 0)
+// 	for _, v := range inData {
+// 		data, err := proto.Marshal(v)
+// 		if err != nil {
+// 			log.Error("marshaling error: ", err)
+// 		}
+// 		sData = append(sData, string(data))
+// 	}
+// 	data, _ := json_v1.JsonEncode(sData)
+//
+// 	// 执行写日志接口请求
+// 	if code, body, err := request_v1.PostForm(Me.httpDomain+"/log/write", map[string]string{
+// 		"type": strconv.Itoa(int(Me.dataType)),
+// 		"data": data,
+// 	}); err != nil {
+// 		return errors.New("日志发送失败:" + err.Error())
+// 	} else if code != 200 {
+// 		return errors.New("日志发送失败:状态码不为200，为" + strconv.Itoa(code))
+// 	} else if body != `{"errcode": 0,"data":"ok"}` {
+// 		return errors.New("日志发送失败:返回body:" + body)
+// 	}
+// 	return nil
+// }
 
 // grpc程序日志写入
 func (Me *AppLog) SdkAppLogAddGRpc(inData *grpc_proto_log.AppLogData) error {
@@ -98,13 +95,13 @@ func (Me *AppLog) SdkAppLogAddGRpc(inData *grpc_proto_log.AppLogData) error {
 
 // 数据表日志 ///////////////////////////////////////////
 
-func NewSdkDbLog(httpDomain, gRpcAddress string) *DbLog {
+func NewSdkDbLog(gRpcAddress string) *DbLog {
 	handle := &DbLog{
 		dataType: 1001,
 	}
-	if httpDomain != "" {
-		handle.httpDomain = httpDomain
-	}
+	// if httpDomain != "" {
+	// 	handle.httpDomain = httpDomain
+	// }
 	if gRpcAddress != "" {
 		// 创建grpc连接
 		conn, err := grpc.Dial(gRpcAddress, grpc.WithInsecure())
@@ -118,35 +115,35 @@ func NewSdkDbLog(httpDomain, gRpcAddress string) *DbLog {
 }
 
 // http数据表日志写入
-func (Me *DbLog) SdkDbLogAddHttp(inData []*grpc_proto_log.DbLogData) error {
-	if Me.httpDomain == "" {
-		return errors.New("未设置domain，请先执行SetDomain设置域名")
-	}
-
-	// 数据内容体现用proto加密
-	sData := make([]string, 0)
-	for _, v := range inData {
-		data, err := proto.Marshal(v)
-		if err != nil {
-			log.Error("marshaling error: ", err)
-		}
-		sData = append(sData, string(data))
-	}
-	data, _ := json_v1.JsonEncode(sData)
-
-	// 执行写日志接口请求
-	if code, body, err := request_v1.PostForm(Me.httpDomain+"/log/write", map[string]string{
-		"type": strconv.Itoa(int(Me.dataType)),
-		"data": data,
-	}); err != nil {
-		return errors.New("日志发送失败:" + err.Error())
-	} else if code != 200 {
-		return errors.New("日志发送失败:状态码不为200，为" + strconv.Itoa(code))
-	} else if body != `{"errcode": 0,"data":"ok"}` {
-		return errors.New("日志发送失败:返回body:" + body)
-	}
-	return nil
-}
+// func (Me *DbLog) SdkDbLogAddHttp(inData []*grpc_proto_log.DbLogData) error {
+// 	if Me.httpDomain == "" {
+// 		return errors.New("未设置domain，请先执行SetDomain设置域名")
+// 	}
+//
+// 	// 数据内容体现用proto加密
+// 	sData := make([]string, 0)
+// 	for _, v := range inData {
+// 		data, err := proto.Marshal(v)
+// 		if err != nil {
+// 			log.Error("marshaling error: ", err)
+// 		}
+// 		sData = append(sData, string(data))
+// 	}
+// 	data, _ := json_v1.JsonEncode(sData)
+//
+// 	// 执行写日志接口请求
+// 	if code, body, err := request_v1.PostForm(Me.httpDomain+"/log/write", map[string]string{
+// 		"type": strconv.Itoa(int(Me.dataType)),
+// 		"data": data,
+// 	}); err != nil {
+// 		return errors.New("日志发送失败:" + err.Error())
+// 	} else if code != 200 {
+// 		return errors.New("日志发送失败:状态码不为200，为" + strconv.Itoa(code))
+// 	} else if body != `{"errcode": 0,"data":"ok"}` {
+// 		return errors.New("日志发送失败:返回body:" + body)
+// 	}
+// 	return nil
+// }
 
 // grpc数据表日志写入
 func (Me *DbLog) SdkDbLogAddGRpc(inData *grpc_proto_log.DbLogData) error {

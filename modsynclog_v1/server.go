@@ -8,7 +8,6 @@ import (
 	"github.com/loudbund/go-socket/socket_v1"
 	"github.com/loudbund/go-utils/utils_v1"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 	"strconv"
 	"strings"
 	"sync"
@@ -58,13 +57,13 @@ func NewServer(Ip string, PortSocket, PortHttp, PortGRpc int, logFolder string) 
 	go Me.messageWrite()
 
 	// 2、 http服务,提供日志写入api
-	http.HandleFunc("/log/write", Me.write)
-	fmt.Println("http开始监听:" + Ip + ":" + strconv.Itoa(PortHttp))
-	go func() {
-		if err := http.ListenAndServe(Ip+":"+strconv.Itoa(PortHttp), nil); err != nil {
-			log.Error(err)
-		}
-	}()
+	// http.HandleFunc("/log/write", Me.write)
+	// fmt.Println("http开始监听:" + Ip + ":" + strconv.Itoa(PortHttp))
+	// go func() {
+	// 	if err := http.ListenAndServe(Ip+":"+strconv.Itoa(PortHttp), nil); err != nil {
+	// 		log.Error(err)
+	// 	}
+	// }()
 
 	// 3、socket服务器
 	Me.SocketServer = socket_v1.NewServer(Ip, PortSocket, func(Event socket_v1.HookEvent) {
@@ -107,44 +106,44 @@ func (Me *Server) closePreDateLog() {
 }
 
 // 处理http写日志请求
-func (Me *Server) write(writer http.ResponseWriter, request *http.Request) {
-	// 参数接收,【type必须小于20000】
-	KeyType := int16(0)
-	KeyData := ""
-	if true {
-		vType := request.PostFormValue("type")
-		vData := request.PostFormValue("data")
-		if vType != "" {
-			if d, err := strconv.Atoi(vType); err == nil {
-				if d < 20000 {
-					KeyType = int16(d)
-				}
-			}
-		}
-		KeyData = vData
-	}
-	// 参数判断,【type和data必须有值】
-	if KeyType == 0 || KeyData == "" {
-		_, _ = writer.Write([]byte(`{"errcode": 101,"errmsg":"参数错误","err":""}`))
-	} else {
-		if D, err := json_v1.JsonDecode(KeyData); err != nil {
-			_, _ = writer.Write([]byte(`{"errcode": 102,"errmsg":"data参数错误","err":""}`))
-		} else {
-			if _, ok := D.([]interface{}); !ok {
-				_, _ = writer.Write([]byte(`{"errcode": 103,"errmsg":"data参数错误","err":""}`))
-			} else {
-				for _, V := range D.([]interface{}) {
-					// 日志写入管道
-					Me.logChan <- &filelog_v1.UDataSend{
-						DataType: KeyType,
-						Data:     []byte(V.(string)),
-					}
-				}
-				_, _ = writer.Write([]byte(`{"errcode": 0,"data":"ok"}`))
-			}
-		}
-	}
-}
+// func (Me *Server) write(writer http.ResponseWriter, request *http.Request) {
+// 	// 参数接收,【type必须小于20000】
+// 	KeyType := int16(0)
+// 	KeyData := ""
+// 	if true {
+// 		vType := request.PostFormValue("type")
+// 		vData := request.PostFormValue("data")
+// 		if vType != "" {
+// 			if d, err := strconv.Atoi(vType); err == nil {
+// 				if d < 20000 {
+// 					KeyType = int16(d)
+// 				}
+// 			}
+// 		}
+// 		KeyData = vData
+// 	}
+// 	// 参数判断,【type和data必须有值】
+// 	if KeyType == 0 || KeyData == "" {
+// 		_, _ = writer.Write([]byte(`{"errcode": 101,"errmsg":"参数错误","err":""}`))
+// 	} else {
+// 		if D, err := json_v1.JsonDecode(KeyData); err != nil {
+// 			_, _ = writer.Write([]byte(`{"errcode": 102,"errmsg":"data参数错误","err":""}`))
+// 		} else {
+// 			if _, ok := D.([]interface{}); !ok {
+// 				_, _ = writer.Write([]byte(`{"errcode": 103,"errmsg":"data参数错误","err":""}`))
+// 			} else {
+// 				for _, V := range D.([]interface{}) {
+// 					// 日志写入管道
+// 					Me.logChan <- &filelog_v1.UDataSend{
+// 						DataType: KeyType,
+// 						Data:     []byte(V.(string)),
+// 					}
+// 				}
+// 				_, _ = writer.Write([]byte(`{"errcode": 0,"data":"ok"}`))
+// 			}
+// 		}
+// 	}
+// }
 
 // 管道接收日志并写文件
 func (Me *Server) messageWrite() {
