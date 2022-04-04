@@ -6,13 +6,11 @@ import (
 
 // 6、主函数 -------------------------------------------------------------------------
 func main() {
-	serverIp := "127.0.0.1"
-	portSocket := 2222
-	portHttp := 1234
-	portGRpc := 1235
+	// 1、创建客户端连接
+	s := modsynclog_v1.NewServer("127.0.0.1", 2222, 1235, "/tmp/test-modsynlog-server")
 
-	// 创建客户端连接
-	_ = modsynclog_v1.NewServer(serverIp, portSocket, portHttp, portGRpc, "/tmp/test-modsynlog-server")
+	// 2、直接发一条数据过去
+	s.CommitData(1234, []byte("haha12345678"))
 
 	// 处理其他逻辑
 	select {}

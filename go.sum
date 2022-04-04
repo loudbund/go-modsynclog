@@ -34,7 +34,6 @@ github.com/golang/protobuf v1.4.0/go.mod h1:jodUvKwWbYaEsadDk5Fwe5c77LiNKVO9IDvq
 github.com/golang/protobuf v1.4.1/go.mod h1:U8fpvMrcmy5pZrNK1lt4xCsGvpyWQ/VVv6QDs8UjoX8=
 github.com/golang/protobuf v1.4.2/go.mod h1:oDoupMAO8OvCJWAcko0GGGIgR6R6ocIYbsSw735rRwI=
 github.com/golang/protobuf v1.4.3/go.mod h1:oDoupMAO8OvCJWAcko0GGGIgR6R6ocIYbsSw735rRwI=
-github.com/golang/protobuf v1.5.0 h1:LUVKkCeviFUMKqHa4tXIIij/lbhnMbP7Fn5wKdKkRh4=
 github.com/golang/protobuf v1.5.0/go.mod h1:FsONVRAS9T7sI+LIUmWTfcYkHO4aIWwzhcaSAoJOfIk=
 github.com/golang/protobuf v1.5.2 h1:ROPKBNFfQgOUMifHyP+KYbvpjbdoFNs+aK7DXlji0Tw=
 github.com/golang/protobuf v1.5.2/go.mod h1:XVQd3VNwM+JqD3oG2Ue2ip4fOMUkwXdXDdiuN0vRsmY=
@@ -52,12 +51,10 @@ github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnr
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/larspensjo/config v0.0.0-20160228172812-b6db95dc6321 h1:HuvFF+bNfti7Q3taQTLox7YntC2IzUzM8pn2zyRTn98=
 github.com/larspensjo/config v0.0.0-20160228172812-b6db95dc6321/go.mod h1:2tvhHYSOp38Gz/nhlXdCBepDFHG1/GCI0nuk4Dv9EyM=
-github.com/loudbund/go-filelog v1.0.12 h1:1adTR0WjtSLvuliAzca5jDIXxiJTV4hleiwpYvkE3/8=
-github.com/loudbund/go-filelog v1.0.12/go.mod h1:844srXdFlDGeWQfDGfG4nJW12g88LqPEhGjQhn4g94g=
+github.com/loudbund/go-filelog v1.0.13 h1:X02xX9rsspgukNWoPNCy0Cj3KeIvvzqpiyO0nEHmTCE=
+github.com/loudbund/go-filelog v1.0.13/go.mod h1:844srXdFlDGeWQfDGfG4nJW12g88LqPEhGjQhn4g94g=
 github.com/loudbund/go-json v1.0.0 h1:yviANCed1A55ctf2KUAQHbf9oI9YBs2/y8EhKlRHOoE=
 github.com/loudbund/go-json v1.0.0/go.mod h1:szBBt6hUNf4Cxo6HoVEbN17znTEmD0Wgma2kQs6SiOE=
-github.com/loudbund/go-request v1.0.0 h1:4XCBP5eflpwe1/qj7nHEC6jzsPbbdTETZaHZNjcxYps=
-github.com/loudbund/go-request v1.0.0/go.mod h1:rCe7Y8E7qT2c33RTN4Ay1ZEnn0qCYQKod3HLF7TS3S8=
 github.com/loudbund/go-socket v1.0.11 h1:lqzpOg1brwzTqBnFCMaF1UkZjY8e9NlzUqSDn7NtxmM=
 github.com/loudbund/go-socket v1.0.11/go.mod h1:tYA+/Bpd7mtNBehQDIBsMb8Arso+UeSQaQoCycjUPOI=
 github.com/loudbund/go-utils v1.0.8 h1:HQxknx3ivfU+7wpUnNDCEZCPcmqjm9CzKasGOC4CD60=

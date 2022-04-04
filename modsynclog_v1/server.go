@@ -53,29 +53,28 @@ func NewServer(Ip string, PortSocket, PortGRpc int, logFolder string) *Server {
 	// 1、关闭前几天的日志
 	Me.closePreDateLog()
 
-	// 1、写日志协程
+	// 2、写日志协程
 	go Me.messageWrite()
-
-	// 2、 http服务,提供日志写入api
-	// http.HandleFunc("/log/write", Me.write)
-	// fmt.Println("http开始监听:" + Ip + ":" + strconv.Itoa(PortHttp))
-	// go func() {
-	// 	if err := http.ListenAndServe(Ip+":"+strconv.Itoa(PortHttp), nil); err != nil {
-	// 		log.Error(err)
-	// 	}
-	// }()
 
 	// 3、socket服务器
 	Me.SocketServer = socket_v1.NewServer(Ip, PortSocket, func(Event socket_v1.HookEvent) {
 		Me.onHookEvent(Event)
 	})
 
-	// 4、grpc服务
+	// 4、grpc服务，
 	if PortGRpc > 0 {
-		NewLog(Ip+":"+strconv.Itoa(PortGRpc), Me)
+		go NewLog(Ip+":"+strconv.Itoa(PortGRpc), Me)
 	}
 
 	return Me
+}
+
+// 接收直接发过来的数据
+func (Me *Server) CommitData(DataType int16, Data []byte) {
+	Me.logChan <- &filelog_v1.UDataSend{
+		DataType: DataType,
+		Data:     Data,
+	}
 }
 
 // 关闭前几天的日志文件
@@ -151,7 +150,8 @@ func (Me *Server) messageWrite() {
 	for {
 		select {
 		case <-T.C:
-			// 判断是否跨天了
+			// 每秒都判断刷新下Me.date 和 日志handle
+			// 判断是否跨天了，跨天需要删除当前的日志句柄，并修改当前的日志日期Me.date
 			Time := time.Now().Unix()
 			if true {
 				Date := utils_v1.Time().Date(time.Unix(Time, 0))
@@ -170,7 +170,7 @@ func (Me *Server) messageWrite() {
 				return
 			}
 			// fmt.Println(D.DataType, string(D.Data))
-			// 判断是否跨天了
+			// 判断是否跨天了，跨天需要删除当前的日志句柄，并修改当前的日志日期Me.date
 			Time := time.Now().Unix()
 			if true {
 				Date := utils_v1.Time().Date(time.Unix(Time, 0))
@@ -184,10 +184,11 @@ func (Me *Server) messageWrite() {
 				}
 			}
 
-			// 准备写入日志
+			// 日志handle不存在则先创建日志handle
 			if _, ok := Me.logHandles[Me.date]; !ok {
 				Me.logHandles[Me.date] = filelog_v1.New(Me.logFolder, Me.date)
 			}
+			// 写入到文件日志
 			if _, err := Me.logHandles[Me.date].Add(int32(Time), D.DataType, D.Data); err != nil {
 				log.Error(err)
 			}
