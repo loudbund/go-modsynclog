@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/loudbund/go-filelog/filelog_v1"
 	"github.com/loudbund/go-json/json_v1"
+	"github.com/loudbund/go-modsynclog/modsysclog_read_logs"
 	"github.com/loudbund/go-socket/socket_v1"
 	"github.com/loudbund/go-utils/utils_v1"
 	log "github.com/sirupsen/logrus"
@@ -23,7 +24,7 @@ type User struct {
 	ReqDate   string // 请求日志的日期
 	ReqDateId int64  // 请求日志的位置
 
-	logReadHandles map[string]*filelog_v1.CFileLog // 日志处理实例map，键值为日期
+	readerLog *modsysclog_read_logs.ReadLogs // 日志读取工具
 }
 
 // 结构体2： 服务端结构体
@@ -89,7 +90,7 @@ func (Me *Server) closePreDateLog() {
 			break
 		}
 
-		// 只处理昨天前
+		// 日期已经是今天了，停止处理
 		if iDate == Today {
 			break
 		}
@@ -177,6 +178,7 @@ func (Me *Server) messageWrite() {
 				if Date != Me.date {
 					// 关闭
 					if _, ok := Me.logHandles[Me.date]; ok {
+						Me.logHandles[Me.date].SetFinish() // 设置finish标记
 						Me.logHandles[Me.date].Close()
 						delete(Me.logHandles, Me.date)
 					}
@@ -195,6 +197,8 @@ func (Me *Server) messageWrite() {
 		}
 	}
 }
+
+// socket日志同步服务 -------------------------
 
 // 1、处理数据,多线程转单线程处理
 func (Me *Server) onHookEvent(Event socket_v1.HookEvent) {
@@ -233,24 +237,31 @@ func (Me *Server) onHookEvent(Event socket_v1.HookEvent) {
 }
 
 // 批量获取log日志
-func (Me *Server) getLogGroup(U *User, rowNumber int) []*filelog_v1.UDataSend {
+func (Me *Server) getLogGroup(U *User, rowNumber int) ([]*filelog_v1.UDataSend, bool) {
 	Me.lockListUser.Lock()
-	Id := Me.Users[U.ClientId].ReqDateId
+	KeyDate := Me.Users[U.ClientId].ReqDate
+	KeyDateId := Me.Users[U.ClientId].ReqDateId
 	Me.lockListUser.Unlock()
 
-	Data := make([]*filelog_v1.UDataSend, 0)
-	for i := 0; i < rowNumber; i++ {
-		if D, err := U.logReadHandles[U.ReqDate].GetOne(Id); err != nil {
-			log.WithFields(log.Fields{"n": "取数据失败"}).Error(err)
-			return Data
-		} else if D == nil {
-			return Data
-		} else {
-			Data = append(Data, D)
+	KeyData := make([]*filelog_v1.UDataSend, 0)
+	KeyFinish := false
+	if err := U.readerLog.Read(KeyDate, KeyDateId, func(Date string, DataId int64, Data *filelog_v1.UDataSend, Finish bool) int {
+		if Finish || Date != KeyDate { // 日期参数的日志已读取完毕
+			KeyFinish = true
+			return 0 // 终止读取
 		}
-		Id++
+		if Data == nil {
+			return 0 // 终止读取
+		}
+		KeyData = append(KeyData, Data)
+		if len(KeyData) >= rowNumber {
+			return 0 // 终止读取
+		}
+		return 1 // 继续读取
+	}); err != nil {
+		log.WithFields(log.Fields{"n": "取数据失败"}).Error(err)
 	}
-	return Data
+	return KeyData, KeyFinish
 }
 
 // 发送日志给客户端
@@ -265,49 +276,46 @@ func (Me *Server) sendLog(U *User) {
 		}
 
 		if U.ReqDate != "" {
-			if _, ok := U.logReadHandles[U.ReqDate]; !ok {
-				U.logReadHandles[U.ReqDate] = filelog_v1.New(Me.logFolder, U.ReqDate)
-			} else {
-				KeyPerNum := 500
-				KeyData := Me.getLogGroup(U, KeyPerNum)
-				// 打印点输出
-				if len(KeyData) > 0 {
-					fmt.Println(utils_v1.Time().DateTime(), "send log to ", U.ClientId, len(KeyData))
-				}
-
-				// 有数据需要处理
-				if len(KeyData) > 0 {
-					if err := Me.SocketServer.SendMsg(&U.ClientId, socket_v1.UDataSocket{
-						Zlib:    1,
-						CType:   302,
-						Content: utilsEncodeUData(KeyData),
-					}); err != nil {
-						log.WithFields(log.Fields{"n": "消息发送失败"}).Error(err)
-						return
-					} else {
-						Me.lockListUser.Lock()
-						if _, ok := Me.Users[U.ClientId]; ok {
-							Me.Users[U.ClientId].ReqDateId += int64(len(KeyData))
-						}
-						Me.lockListUser.Unlock()
-					}
-					if len(KeyData) == KeyPerNum {
-						continue
-					}
-				}
-				// 如果日期内的日志已经发送完成，则发送标记
-				if finished := U.logReadHandles[U.ReqDate].GetFinish(); finished {
-					if err := Me.SocketServer.SendMsg(&U.ClientId, socket_v1.UDataSocket{
-						Zlib:    1,
-						CType:   304,
-						Content: []byte(U.ReqDate),
-					}); err != nil {
-						log.WithFields(log.Fields{"n": "消息发送失败"}).Error(err)
-						return
-					}
-				}
-				time.Sleep(time.Second)
+			KeyPerNum := 500
+			KeyData, KeyFinish := Me.getLogGroup(U, KeyPerNum)
+			// 打印点输出
+			if len(KeyData) > 0 {
+				fmt.Println(utils_v1.Time().DateTime(), "send log to ", U.ClientId, len(KeyData))
 			}
+
+			// 有数据需要处理
+			if len(KeyData) > 0 {
+				if err := Me.SocketServer.SendMsg(&U.ClientId, socket_v1.UDataSocket{
+					Zlib:    1,
+					CType:   302,
+					Content: utilsEncodeUData(KeyData),
+				}); err != nil {
+					log.WithFields(log.Fields{"n": "消息发送失败"}).Error(err)
+					return
+				} else {
+					Me.lockListUser.Lock()
+					if _, ok := Me.Users[U.ClientId]; ok {
+						Me.Users[U.ClientId].ReqDateId += int64(len(KeyData))
+					}
+					Me.lockListUser.Unlock()
+				}
+				if len(KeyData) == KeyPerNum {
+					continue
+				}
+			}
+			// 如果日期内的日志已经发送完成，则发送标记
+			if KeyFinish {
+				if err := Me.SocketServer.SendMsg(&U.ClientId, socket_v1.UDataSocket{
+					Zlib:    1,
+					CType:   304,
+					Content: []byte(U.ReqDate),
+				}); err != nil {
+					log.WithFields(log.Fields{"n": "消息发送失败"}).Error(err)
+					return
+				}
+			}
+			time.Sleep(time.Second)
+			// }
 		} else {
 			time.Sleep(time.Second)
 		}
@@ -318,10 +326,10 @@ func (Me *Server) sendLog(U *User) {
 func (Me *Server) addUser(ClientId, Addr string) *User {
 	IpPort := strings.Split(Addr, ":")
 	U := &User{
-		ClientId:       ClientId,
-		ClientIp:       IpPort[0],
-		LoginTime:      utils_v1.Time().DateTime(),
-		logReadHandles: map[string]*filelog_v1.CFileLog{},
+		ClientId:  ClientId,
+		ClientIp:  IpPort[0],
+		LoginTime: utils_v1.Time().DateTime(),
+		readerLog: modsysclog_read_logs.NewReadLogs(Me.logFolder),
 	}
 	Me.lockListUser.Lock()
 	Me.ListUser.PushBack(U)
@@ -336,6 +344,7 @@ func (Me *Server) removeUser(ClientId string) {
 	Me.lockListUser.Lock()
 	for e := Me.ListUser.Front(); e != nil; e = e.Next() {
 		if e.Value.(*User).ClientId == ClientId {
+			e.Value.(*User).readerLog.Close()
 			Me.ListUser.Remove(e)
 			delete(Me.Users, ClientId)
 		}
