@@ -305,6 +305,7 @@ func (Me *Server) sendLog(U *User) {
 			}
 			// 如果日期内的日志已经发送完成，则发送标记
 			if KeyFinish {
+				fmt.Println(utils_v1.Time().DateTime(), "日期日志发送结束 ", U.ClientId, U.ReqDate)
 				if err := Me.SocketServer.SendMsg(&U.ClientId, socket_v1.UDataSocket{
 					Zlib:    1,
 					CType:   304,
@@ -313,6 +314,8 @@ func (Me *Server) sendLog(U *User) {
 					log.WithFields(log.Fields{"n": "消息发送失败"}).Error(err)
 					return
 				}
+				// 停止扫描发送
+				U.ReqDate = ""
 			}
 			time.Sleep(time.Second)
 			// }
