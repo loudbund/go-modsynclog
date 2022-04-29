@@ -18,6 +18,7 @@ type ReadLogs struct {
 	DataId int64  // 下一数据id
 
 	fileLogHandle *filelog_v1.CFileLog // 文件日志类句柄
+	closed        bool                 // 关闭状态
 }
 
 // 获取句柄
@@ -26,15 +27,14 @@ func NewReadLogs(SimpleLogFolder string) *ReadLogs {
 	handle := &ReadLogs{
 		simpleLogFolder: SimpleLogFolder,
 		fileLogHandle:   nil,
+		closed:          false,
 	}
 	return handle
 }
 
 // 关闭
 func (Me *ReadLogs) Close() {
-	if Me.fileLogHandle != nil {
-		Me.fileLogHandle.Close()
-	}
+	Me.closed = true
 }
 
 // 切换到新一天日志
@@ -67,6 +67,13 @@ func (Me *ReadLogs) Read(DateStart string, DataIdStart int64, CallBackData func(
 
 	// 循环处理
 	for {
+		// 已标记为关闭了
+		if Me.closed {
+			if Me.fileLogHandle != nil {
+				Me.fileLogHandle.Close()
+			}
+			return nil
+		}
 		// 读取一条数据
 		if D, err := Me.fileLogHandle.GetOne(Me.DataId); err != nil { // 读取出错
 			fmt.Println(err)
