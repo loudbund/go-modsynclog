@@ -159,6 +159,7 @@ func (Me *Server) messageWrite() {
 				if Date != Me.date {
 					// 关闭
 					if _, ok := Me.logHandles[Me.date]; ok {
+						Me.logHandles[Me.date].SetFinish() // 设置finish标记
 						Me.logHandles[Me.date].Close()
 						delete(Me.logHandles, Me.date)
 					}
