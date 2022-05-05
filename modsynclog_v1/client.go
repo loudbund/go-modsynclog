@@ -21,6 +21,7 @@ type Client struct {
 }
 type ClientOptions struct {
 	InitHistoryDayNum int // NewClient的更多参数项
+	SendFlag          int // socket的传输码
 }
 
 // 对外函数：创建实例
@@ -31,14 +32,18 @@ func NewClient(serverIp string, serverPort int, logFolder string, opt ...ClientO
 		logHandles:        map[string]*filelog_v1.CFileLog{},
 		initHistoryDayNum: 0,
 	}
-	if len(opt) > 0 {
-		if opt[0].InitHistoryDayNum < 0 {
-			Me.initHistoryDayNum = opt[0].InitHistoryDayNum
-		}
+	// 同步历史数据天数设置
+	if len(opt) > 0 && opt[0].InitHistoryDayNum < 0 {
+		Me.initHistoryDayNum = opt[0].InitHistoryDayNum
 	}
 
 	// 2、创建客户端socket连接
 	SocketClient := socket_v1.NewClient(serverIp, serverPort, Me.onMessage, Me.onConnectFail, Me.onConnect, Me.onDisConnect)
+	// socket传输码设置
+	if len(opt) > 0 && opt[0].SendFlag > 0 {
+		SocketClient.Set("SendFlag", opt[0].SendFlag)
+	}
+
 	go SocketClient.Connect()
 
 	return Me
