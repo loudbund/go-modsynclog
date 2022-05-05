@@ -37,10 +37,22 @@ func NewLog(Addr string, server *Server) {
 }
 
 // grpc远程函数
+func (x *LogServer) DbLogWrite(ctx context.Context, in *grpc_proto_log.DbLogRequest) (*grpc_proto_log.DbLogResponse, error) { // 进行编码
+	// 日志写入管道
+	x.server.logChan <- &filelog_v1.UDataSend{
+		DataType: int16(in.DataType),
+		Data:     in.Data,
+	}
+
+	// 3、写入日志
+	return &grpc_proto_log.DbLogResponse{ErrCode: 0, ErrMessage: "ok", Data: ""}, nil
+}
+
+// grpc远程函数
 func (x *LogServer) AppLogWrite(ctx context.Context, in *grpc_proto_log.AppLogRequest) (*grpc_proto_log.AppLogResponse, error) { // 进行编码
 	// 日志写入管道
 	x.server.logChan <- &filelog_v1.UDataSend{
-		DataType: 1101,
+		DataType: int16(in.DataType),
 		Data:     in.Data,
 	}
 
@@ -49,13 +61,13 @@ func (x *LogServer) AppLogWrite(ctx context.Context, in *grpc_proto_log.AppLogRe
 }
 
 // grpc远程函数
-func (x *LogServer) DbLogWrite(ctx context.Context, in *grpc_proto_log.DbLogRequest) (*grpc_proto_log.DbLogResponse, error) { // 进行编码
+func (x *LogServer) JsonLogWrite(ctx context.Context, in *grpc_proto_log.JsonLogRequest) (*grpc_proto_log.JsonLogResponse, error) { // 进行编码
 	// 日志写入管道
 	x.server.logChan <- &filelog_v1.UDataSend{
-		DataType: 1001,
+		DataType: int16(in.DataType),
 		Data:     in.Data,
 	}
 
 	// 3、写入日志
-	return &grpc_proto_log.DbLogResponse{ErrCode: 0, ErrMessage: "ok", Data: ""}, nil
+	return &grpc_proto_log.JsonLogResponse{ErrCode: 0, ErrMessage: "ok", Data: ""}, nil
 }
