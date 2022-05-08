@@ -105,48 +105,13 @@ func (Me *Server) closePreDateLog() {
 	}
 }
 
-// 处理http写日志请求
-// func (Me *Server) write(writer http.ResponseWriter, request *http.Request) {
-// 	// 参数接收,【type必须小于20000】
-// 	KeyType := int16(0)
-// 	KeyData := ""
-// 	if true {
-// 		vType := request.PostFormValue("type")
-// 		vData := request.PostFormValue("data")
-// 		if vType != "" {
-// 			if d, err := strconv.Atoi(vType); err == nil {
-// 				if d < 20000 {
-// 					KeyType = int16(d)
-// 				}
-// 			}
-// 		}
-// 		KeyData = vData
-// 	}
-// 	// 参数判断,【type和data必须有值】
-// 	if KeyType == 0 || KeyData == "" {
-// 		_, _ = writer.Write([]byte(`{"errcode": 101,"errmsg":"参数错误","err":""}`))
-// 	} else {
-// 		if D, err := json_v1.JsonDecode(KeyData); err != nil {
-// 			_, _ = writer.Write([]byte(`{"errcode": 102,"errmsg":"data参数错误","err":""}`))
-// 		} else {
-// 			if _, ok := D.([]interface{}); !ok {
-// 				_, _ = writer.Write([]byte(`{"errcode": 103,"errmsg":"data参数错误","err":""}`))
-// 			} else {
-// 				for _, V := range D.([]interface{}) {
-// 					// 日志写入管道
-// 					Me.logChan <- &filelog_v1.UDataSend{
-// 						DataType: KeyType,
-// 						Data:     []byte(V.(string)),
-// 					}
-// 				}
-// 				_, _ = writer.Write([]byte(`{"errcode": 0,"data":"ok"}`))
-// 			}
-// 		}
-// 	}
-// }
-
 // 管道接收日志并写文件
 func (Me *Server) messageWrite() {
+	// 日志handle不存在则先创建日志handle
+	if _, ok := Me.logHandles[Me.date]; !ok {
+		Me.logHandles[Me.date] = filelog_v1.New(Me.logFolder, Me.date)
+	}
+	// 定时器设置
 	T := time.NewTicker(time.Second)
 	for {
 		select {
@@ -164,6 +129,10 @@ func (Me *Server) messageWrite() {
 						delete(Me.logHandles, Me.date)
 					}
 					Me.date = Date
+					// 日志handle不存在则先创建日志handle
+					if _, ok := Me.logHandles[Me.date]; !ok {
+						Me.logHandles[Me.date] = filelog_v1.New(Me.logFolder, Me.date)
+					}
 				}
 			}
 
@@ -199,7 +168,9 @@ func (Me *Server) messageWrite() {
 	}
 }
 
+// //////////////////////////////////////////////////////////////////////
 // socket日志同步服务 -------------------------
+// //////////////////////////////////////////////////////////////////////
 
 // 1、处理数据,多线程转单线程处理
 func (Me *Server) onHookEvent(Event socket_v1.HookEvent) {
