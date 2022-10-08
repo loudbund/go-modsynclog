@@ -16,8 +16,9 @@ func main() {
 		2222,
 		"/tmp/test-modsynlog-client",
 		modsynclog_v1.ClientOptions{ // 省略掉该参数，InitHistoryDayNum为0，即只补充同步当天日志
-			InitHistoryDayNum: -1,     // 补充同步昨天的日志
-			SendFlag:          123456, // 传输码
+			InitHistoryDayNum:   -1,     // 补充同步昨天的日志
+			SendFlag:            123456, // 传输码
+			RetainHistoryDayNum: -3,     // 日志保留3天
 		},
 	)
 

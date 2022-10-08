@@ -7,6 +7,8 @@ import (
 	"github.com/loudbund/go-socket/socket_v1"
 	"github.com/loudbund/go-utils/utils_v1"
 	log "github.com/sirupsen/logrus"
+	"os"
+	"strings"
 	"time"
 )
 
@@ -16,25 +18,38 @@ type Client struct {
 	ReqDate   string // 请求日志的日期
 	ReqDateId int64  // 请求日志的位置
 
-	logHandles        map[string]*filelog_v1.CFileLog // 日志处理实例map，键值为日期
-	initHistoryDayNum int                             // 启动时同步前几天日志数据的天数，0,当天，-1，昨天……；默认为0
+	logHandles          map[string]*filelog_v1.CFileLog // 日志处理实例map，键值为日期
+	initHistoryDayNum   int                             // 启动时同步前几天日志数据的天数，0,当天，-1，昨天……；默认为0
+	retainHistoryDayNum int                             // 日志保留到的天数,(a:日志至少保留1天及最大为-1；b:必须小于等于initHistoryDayNum) ，-1，昨天，-2，前天……；默认为-1
 }
-type ClientOptions struct {
-	InitHistoryDayNum int // NewClient的更多参数项
-	SendFlag          int // socket的传输码
+type ClientOptions struct { // NewClient的更多参数项
+	InitHistoryDayNum   int // 参见 Client.initHistoryDayNum 的说明
+	RetainHistoryDayNum int // 参见 Client.retainHistoryDayNum 的说明
+	SendFlag            int // socket的传输码
 }
 
 // 对外函数：创建实例
 func NewClient(serverIp string, serverPort int, logFolder string, opt ...ClientOptions) *Client {
 	// 1、实例化客户端
 	Me := &Client{
-		logFolder:         logFolder,
-		logHandles:        map[string]*filelog_v1.CFileLog{},
-		initHistoryDayNum: 0,
+		logFolder:           logFolder,
+		logHandles:          map[string]*filelog_v1.CFileLog{},
+		initHistoryDayNum:   0,
+		retainHistoryDayNum: -1,
 	}
-	// 同步历史数据天数设置
-	if len(opt) > 0 && opt[0].InitHistoryDayNum < 0 {
+	// 同步历史数据天数设置 和 日志保留天数设置
+	if len(opt) > 0 {
 		Me.initHistoryDayNum = opt[0].InitHistoryDayNum
+		Me.retainHistoryDayNum = opt[0].RetainHistoryDayNum
+		if Me.initHistoryDayNum > 0 { // 不能大于0
+			Me.initHistoryDayNum = 0
+		}
+		if Me.retainHistoryDayNum > -1 { // 不能大于-1
+			Me.retainHistoryDayNum = -1
+		}
+		if Me.retainHistoryDayNum > Me.initHistoryDayNum { // 不能大于initHistoryDayNum
+			Me.retainHistoryDayNum = Me.initHistoryDayNum
+		}
 	}
 
 	// 2、创建客户端socket连接
@@ -98,6 +113,9 @@ func (Me *Client) initClientLogDate() {
 			Me.ReqDateId = id
 		}
 	}
+
+	// 执行一次日志清理
+	Me.logDelete()
 }
 
 // 2、消息处理
@@ -138,6 +156,10 @@ func (Me *Client) onMsg(Msg socket_v1.UDataSocket, C *socket_v1.Client) {
 				Content: []byte(Content),
 			})
 		}
+
+		// 执行一次日志清理
+		Me.logDelete()
+
 	} else if Msg.CType == 302 { // 收到日志消息
 		// 日志消息解密
 		Rows := utilsDecodeUData(Msg.Content)
@@ -173,6 +195,22 @@ func (Me *Client) onMsg(Msg socket_v1.UDataSocket, C *socket_v1.Client) {
 				log.Error(err)
 				C.DisConnect()
 			}
+		}
+	}
+}
+
+// 3、日志清理
+func (Me *Client) logDelete() {
+	// 开始保留日志的日期
+	retainDate := utils_v1.Time().DateAdd(utils_v1.Time().Date(), Me.retainHistoryDayNum)
+
+	// 从需要保留的日期，向前删除30天的数据
+	Start := utils_v1.Time().DateAdd(retainDate, -30)
+	for D := Start; D < retainDate; D = utils_v1.Time().DateAdd(D, 1) {
+		Folder := Me.logFolder + "/" + strings.ReplaceAll(D, "-", "")
+		if utils_v1.File().CheckFileExist(Folder) {
+			log.Info("清理日志 " + Folder)
+			_ = os.RemoveAll(Folder)
 		}
 	}
 }
